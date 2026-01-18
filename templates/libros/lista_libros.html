@@ -1,0 +1,146 @@
+
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Libros - Biblioteca Django{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4"><i class="fas fa-book text-primary"></i> Catálogo de Libros</h1>
+
+    <!-- filtros / búsqueda (como antes) -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{% url 'libros:lista_libros' %}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" name="q" placeholder="Buscar por título, autor o ISBN..." value="{{ busqueda }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="categoria" name="categoria">
+                            <option value="">Todas las categorías</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if categoria_seleccionada == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos los estados</option>
+                            {% for key,label in estados %}
+                            <option value="{{ key }}" {% if estado_seleccionado == key %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="mb-3">
+        <p class="text-muted">
+            <i class="fas fa-info-circle"></i>
+            Total de resultados: <strong>{{ page_obj.paginator.count }}</strong>
+        </p>
+    </div>
+
+    <div class="row">
+        {% for libro in libros %}
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm libro-card">
+                {% if libro.portada %}
+                <img src="{{ libro.portada.url }}" class="card-img-top" alt="{{ libro.titulo }}" style="height: 250px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                    <i class="fas fa-book fa-4x text-white"></i>
+                </div>
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ libro.titulo|truncatewords:6 }}</h5>
+                    <p class="card-text text-muted"><i class="fas fa-user"></i> {{ libro.autor.nombre }}</p>
+                    <p class="card-text small"><i class="fas fa-building"></i> {{ libro.editorial.nombre }}</p>
+                    <div class="mb-2">
+                        {% for categoria in libro.categorias.all|slice:":2" %}
+                        <span class="badge bg-secondary">{{ categoria.nombre }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-warning text-dark"><i class="fas fa-star"></i> {{ libro.calificacion }}</span>
+                        {% if libro.estado == 'disponible' %}
+                        <span class="badge bg-success">Disponible</span>
+                        {% elif libro.estado == 'prestado' %}
+                        <span class="badge bg-danger">Prestado</span>
+                        {% else %}
+                        <span class="badge bg-warning">Mantenimiento</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-2">
+                        <strong class="text-primary">${{ libro.precio }}</strong>
+                    </div>
+                    <div class="mt-auto">
+                        <a href="{% url 'libros:detalle_libro' libro.id %}" class="btn btn-primary btn-sm w-100"><i class="fas fa-eye"></i> Ver</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info"><i class="fas fa-info-circle"></i> No se encontraron libros.</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+{% if is_paginated %}
+<nav aria-label="Paginación">
+    <ul class="pagination justify-content-center">
+
+        <!-- Anterior -->
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link"
+            href="?{% if get_params %}{{ get_params }}&{% endif %}page={{ page_obj.previous_page_number }}">
+            Anterior
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Anterior</span>
+        </li>
+        {% endif %}
+
+        <!-- Números -->
+        {% for num in paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link"
+            href="?{% if get_params %}{{ get_params }}&{% endif %}page={{ num }}">
+            {{ num }}
+            </a>
+        </li>
+        {% endfor %}
+
+        <!-- Siguiente -->
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+            href="?{% if get_params %}{{ get_params }}&{% endif %}page={{ page_obj.next_page_number }}">
+            Siguiente
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Siguiente</span>
+        </li>
+        {% endif %}
+
+    </ul>
+</nav>
+{% endif %}
+</div>
+{% endblock %}
